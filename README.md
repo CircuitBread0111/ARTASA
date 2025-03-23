@@ -1,2 +1,5 @@
 # ARTASA
-robot
+
+ARTASA, a handheld robotic vision system, is designed to assist individuals who have difficulty reading due to blindness, dyslexia, or other vision impairments. Many people with these conditions struggle to determine whether an object contains text. ARTASA addresses these challenges by processing the environment, detecting and interpreting text, and then converting it into speech using text-to-speech software.
+The system utilizes a dedicated Serial Peripheral Interface (SPI) camera module designed to capture images at an optimal resolution and color balance, ensuring efficient processing by the Optical Character Recognition (OCR) system. A Raspberry Pi is employed as a dedicated computer to manage the overall software, enhancing both the speed and accuracy of the process. The system operates through three primary stages: image acquisition, image and text processing, and audio output. For optimal performance, it identifies text with a confidence level of 75% or higher before reading it aloud.
+The simple handheld device makes it easy to automatically scan objects, identify and verbalize text. This allows for a compact and adaptable design that can be deployed in various environments.
