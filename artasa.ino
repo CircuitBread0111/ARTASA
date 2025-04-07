@@ -2,8 +2,8 @@
 //|File: artasa.ino
 //|Author: Jerrin C. Redmon
 //|Language: C++
-//|Version: 1.0.0
-//|Date: March 23, 2025
+//|Version: 1.1.0
+//|Date: April 7, 2025
 ///////////////////////////|
 
 /*
@@ -30,10 +30,9 @@ Arducam_Mega Camera(CS);
 // CAMERA SETTINGS //
 CAM_IMAGE_MODE resolution = CAM_IMAGE_MODE_UXGA;                    // 1600x1200
 CAM_IMAGE_PIX_FMT format = CAM_IMAGE_PIX_FMT_JPG;                   // JPEG Format
-CAM_COLOR_FX black_white = CAM_IMAGE_FX_BW;                         // Black and White Images
 
 // IMAGE BUFFER //
-const size_t buffer_size = 0xff;                                    // 255 Hex
+const size_t buffer_size =0xff;                                    // 255 Hex
 uint8_t image_buffer[buffer_size] = { 0 };
 
 // SETUP //
@@ -61,26 +60,21 @@ void buzzer() {
 // CAPTURE //
 void capture() {
 
-  delay(100);                                                       // Delay before taking the picture
+ 
   buzzer();                                                         // Audio cue for taking a picture
 
   Camera.setAutoISOSensitive(0);                                    // Set Camera ISO to AUTO
   Camera.setAutoExposure(0);                                        // Set Camera Exposure to AUTO
   Camera.setAutoFocus(0);                                           // Set Camera Focus to AUTO
-  Camera.setColorEffect(black_white);                               // Set Camera Color to B&W
+  
 
-Camera.setColorEffect(CAM_COLOR_FX_BW);                             // B/W for increased legibility
+  Camera.setColorEffect(CAM_COLOR_FX_BW);                             // B/W for increased legibility
 
   Camera.takePicture(resolution, format);                           // Takes a picture
   
   size_t image_size = Camera.getTotalLength();
   size_t bytes_read = 0;                                            // Total bytes read
 
-  Serial.flush();                        
-  delay(500);                                                       // Delay for flush serial
-
-  Serial.write(0xFF);                                               // JPEG SOI Byte 1
-  Serial.write(0xD8);                                               // JPEG SOI Byte 2
 
   while (bytes_read < image_size) {                                 // Writing Image Over Serial
 
@@ -88,14 +82,11 @@ Camera.setColorEffect(CAM_COLOR_FX_BW);                             // B/W for i
     Camera.readBuff(image_buffer, chunk_size);
     Serial.write(image_buffer, chunk_size);
     bytes_read += chunk_size;
-    delay(5);
+    delay(1);
 
   }
 
-  Serial.write(0xFF);                                               // JPEG EOI Byte 1
-  Serial.write(0xD9);                                               // JPEG EOI Byte 2
-  Serial.flush();
-  delay(500);                                                       // Delay for flush serial
+    Serial.println("DONE");                                                   
 
 }
 
