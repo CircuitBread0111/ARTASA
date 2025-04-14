@@ -2,186 +2,190 @@
 #//////////////////////////
 #|File: artasa_main.py
 #|Author: Jerrin C. Redmon
-#|Version: 1.2.0  
-#|Date: April 7, 2025
+#|Version: 1.3.0 
+#|Date: April 10, 2025
 #//////////////////////////
 
-# Description #
-# 
-# 
-# 
+# Description # WORK ON/FIX
+# This script is designed to work with the ESP32 firmware
+# Sends a command to the ESP32 camera module to capture an image
+# and uses PaddleOCR to extract text from the image. The extracted
+# text is then converted to speech using the Piper TTS engine.
+# The script is designed to be run on a Raspberry Pi with a serial
+# connection to the ESP32 camera module. 
 
 #-----------------------------------------------------------------
 
 # Imports #
-import serial
-import time
-import cv2
-from paddleocr import PaddleOCR
-import pyttsx3 as tts
-
+import serial                                                                                                                   # Serial library for serial communication
+import time                                                                                                                     # Time library for sleep and delay functions                               
+import os                                                                                                                       # OS library for file path handling
+import subprocess                                                                                                               # Subprocess library for running shell commands
+import cv2                                                                                                                      # OpenCV library for image processing                       
+from paddleocr import PaddleOCR                                                                                                 # PaddleOCR library for Optical Character Recognition
 
 # Serial Settings #
-port = "/dev/ttyUSB0"   # Name of selected serial port
-baudrate = 921600       # Baudrate of seleted port
-timeout = 5 		# Timeout for serial port
-
+port = "/dev/ttyUSB0"                                                                                                           # Serial port for ESP32 camera module                           
+baudrate = 921600                                                                                                               # Baudrate for serial communication
+timeout = 5                                                                                                                     # Timeout for serial communication      
 
 # OCR Settings #
-language = "en"         # Sets language to english
+language = "en"                                                                                                                 # Language for OCR
 
-# File Outputs #
-image_output = "/home/artasa/Desktop/Capstone/image_output.jpg"
-ocr_output = "/home/artasa/Desktop/Capstone/ocr_output.txt" 
-output_file = "image_output.jpg"
+#File Paths #
+IMAGE_PATH = "/home/artasa/Desktop/Capstone/image_output.jpg"                                                                 # Path to save the captured image
+OCR_PATH = "/home/artasa/Desktop/Capstone/ocr_output.txt"                                                                     # Path to save the OCR output
+OUTPUT_JPG = "image_output.jpg"                                                                                                # Output file name for the captured image   
+MODEL_PATH = "/home/artasa/piper_models/en_US/en_US-joe-medium.onnx"                                                            # Path to the model (Joe)
+CONFIG_PATH = "/home/artasa/piper_models/en_US/en_US-joe-medium.onnx.json"                                                      # Path to the config file
+OUTPUT_WAV = "artasa_output.wav"                                                                                                # Output wav file name
 
-# Initalize #
-ocr_reader = PaddleOCR(use_angle_cls=True, lang=language)
-print(f"OCR Initalized!\nSelected Language:{language}")
+# Initialize #
+ocr_reader = PaddleOCR(use_angle_cls=True, lang=language)                                                                       # Initialize PaddleOCR with the specified language
 
+# Say #
+def say(text):                                                                                                                  # Function to convert text to speech using Piper TTS engine
 
-## TTS Settings ###
-speaker = tts.init()
-print("tts initalized!")
+    try:
+        p1 = subprocess.Popen(                                                                                                                      
+            ["/home/artasa/.local/bin/piper", "--model", MODEL_PATH, "--config", CONFIG_PATH, "--output_file", OUTPUT_WAV],                                                
+            stdin=subprocess.PIPE)                                                                                              # Popen to run piper with the model and config file                                                                                                                
+        p1.communicate(input=text.encode("utf-8"))                                                                              # Send text to piper                                           
+        subprocess.run(["aplay", OUTPUT_WAV])                                                                                   # Play the output wav file using aplay
+                                                             
+    except Exception as e:                                                                                                      # Exception handling for subprocess errors
+        print(f"Error running piper: {e}")                                                                                      # Print error message if subprocess fails                    
 
-# Rate #
-rate = speaker.getProperty('rate')  			# gets details of current speaking rate
-speaker.setProperty('rate', 100)    			# sets new voice rate
+# Send Commands #
+def send_commands(srl):                                                                                                         # Function to send commands to the ESP32 camera module
 
-# Volume #
-volume = speaker.getProperty('volume')   		# gets the current volume level (min=0 and max=1)
-speaker.setProperty('volume',1.0)  				# sets the volume level between 0 and 1
-
-# Voice #
-voices = speaker.getProperty('voices')			# gets details of current voice
-speaker.setProperty('voice', voices[3].id)		# sets index for voice or language
-
-
-
-#-----------------------------------------------------------------
+    srl.reset_input_buffer()                                                                                                    # Clear the input buffer
+    srl.write(b"CAP\n")                                                                                                         # Send command to capture image
+                           
 
 
 
-def send_commands(srl):
+# Serial Read #
+def serial_read(srl):                                                                                                           # Function to read data from the serial port
 
-    srl.reset_input_buffer()
-    srl.write(b"CAP\n")
-    print("Command Sent")
+    buffer = bytearray()                                                                                                        # Initialize buffer to store incoming data
+    receiving = False                                                                                                           # Flag to indicate if we are receiving data
+    print("Waiting for SOI...")                                                                                                 # Print waiting message                               
+
+    with open(IMAGE_PATH, "wb") as file:                                                                                        # Open the output file to save the image
+
+        while (True):                                                                                                           # Loop until we find the end of the image
+            byte = srl.read(1)                                                                                                  # Read one byte from the serial port
+
+            if (not byte):                                                                                                      # Check if no byte is received                    
+                print("Timeout or no data.")                                                                                    # Print timeout message
+                continue                                                                                                        # Continue to the next iteration
+
+            if (not receiving):                                                                                                 # Check if we are not currently receiving data
+
+                if (byte == b'\xFF'):                                                                                           # Check if the byte is the start of an image
+                    next_byte = srl.read(1)                                                                                     # Read the next byte
+
+                    if (next_byte == b'\xD8'):                                                                                  # Check if the next byte is the start of an image                         
+                        buffer = bytearray(b'\xFF\xD8')                                                                         # Initialize buffer with SOI bytes
+                        receiving = True                                                                                        # Set receiving flag to True
+                continue                                                                                                        # Continue to the next iteration
+
+            buffer.extend(byte)                                                                                                 # Append the received byte to the buffer    
+
+            if (len(buffer) % 1024 == 0):                                                                                       # Check if the buffer size is a multiple of 1024 
+                print(f"Received {len(buffer)} bytes")                                                                          # Print the size of the buffer  
+
+            if (len(buffer) >= 2 and buffer[-2:] == b'\xFF\xD9'):                                                               # Check if the last two bytes are EOI
+                print(f"Image Size: {len(buffer) / 1000:.2f} KB")                                                               # Print the size of the image in KB
+                file.write(buffer)                                                                                              # Write the buffer to the output file
+                print(f"Image saved to {IMAGE_PATH}")                                                                           # Print message indicating image saved
+                break                                                                                                           # Break the loop if EOI is found
+
+
+
+
+
+
+
+
+
+# Wait for Done #
+def wait_for_done(srl):                                                                                                         # Function to wait for DONE message from ESP32  
+
+    print("Waiting for DONE message...")                                                                                        # Print waiting message
+    done = srl.readline().decode(errors='ignore').strip()                                                                       # Read the DONE message from the serial port
+
+    if done == "DONE":                                                                                                          # Check if the message is DONE
+        print("\n")                                                                                                             # Print empty line            
+
+    else:                                                                                                                       # If the message is not DONE    
+        print("Move On", done)                                                                                                  # Print the message received
+
+
+
+# OCR Function #
+def ocr_function(input_image_path):                                                                                             # Function to perform OCR on the captured image
+
+    if not os.path.exists(input_image_path):                                                                                    # Check if the input image file exists
+        print("Processing Image...\n")                                                                                          # Print processing message
+        ocr_results = ocr_reader.ocr(input_image_path, cls=True)                                                                # Perform OCR on the image                          
+        print("Image Processed!")                                                                                               # Print image processed message   
+        print("=" * 40 + "\n")                                                                                                  # Print separator 
+
+    with open(OCR_PATH, "w") as text_file:                                                                                    # Open the output file to save the OCR results
+
+        print("Processing OCR...\n")                                                                                            # Print OCR processing message   
+
+        for result in ocr_results:                                                                                              # Loop through the OCR results            
+
+            for line in result:                                                                                                 # Loop through each line in the result
+                bbox, (text, prob) = line                                                                                       # Unpack the bounding box and text/probability
+
+                if prob > 0.75:                                                                                                 # Check if the probability is above the threshold    
+
+                    print(f"Text: {text}\nConfidence: {prob:.3f}\n")                                                            # Print the detected text and confidence
+                    text_file.write(f"{text} ")                                                                                 # Write the detected text to the output file
+
+    print("=" * 40 + "\n")                                                                                                      # Print separator                        
+    print(f"Detected text saved in {OCR_PATH}")                                                                               # Print message indicating text saved
+
+
+
+
+# Text to Speech #
+def text_to_speech(file_path):                                                                                                  # Function to convert text to speech using Piper TTS engine
+
+    if not os.path.exists(file_path):                                                                                           # Check if the OCR output file exists
+        
+        print("OCR output file not found.")                                                                                     # Print error message
+        return                                                                                                                  # Return if file not found
+
+    with open(file_path, "r") as file:                                                                                          # Open the OCR output file to read the text
+
+        text = file.read().strip()                                                                                              # Read the text from the file
+
+        if not text:                                                                                                            # Check if the text is empty
+            say("Processing complete. No text was detected.")                                                                   # Print message if no text detected
+
+        else:
+            say("Processing complete. This is what I found.")                                                                   # Print message indicating text found
+            say(text)                                                                                                           # Convert the detected text to speech                     
+
+
+
+
+# Main Function #
+if __name__ == "__main__":                                                                                                      # Main function to run the script
     
+    with serial.Serial(port, baudrate) as srl:                                                                                  # Open the serial port with the specified settings
 
-
-
-#-----------------------------------------------------------------
-
-
-
-def serial_read(srl):
-    buffer = bytearray()
-    receiving = False
-
-    print("Waiting for SOI...")
-
-    with open(image_output, "wb") as file:
-        while True:
-            byte = srl.read(1)
-            if not byte:
-                print("Timeout or no data.")
-                continue
-
-            if not receiving:
-                if byte == b'\xFF':
-                    next_byte = srl.read(1)
-                    if next_byte == b'\xD8':
-                        print("[✓] SOI FOUND")
-                        buffer = bytearray(b'\xFF\xD8')
-                        receiving = True
-                continue
-
-            buffer.extend(byte)
-
-            if len(buffer) % 1024 == 0:
-                print(f"Received {len(buffer)} bytes")
-
-            if len(buffer) >= 2 and buffer[-2:] == b'\xFF\xD9':
-                print("[✓] EOI FOUND")
-                print(f"Image Size {len(buffer) / 1000} KB")
-                file.write(buffer)
-                print(f"Image saved to {image_output}")
-                break
-
-
-def wait_for_done(srl):
-    print("Waiting for DONE message...")
-    done = srl.readline().decode(errors='ignore').strip()
-    if done == "DONE":
-        print("[✓] Arduino confirmed completion.")
-    else:
-        print("[!] Unexpected end message:", done)              
-
-
-
-
-
-#-----------------------------------------------------------------
-
-
-
-def ocr_function(input_image_path):
-
+        time.sleep(1)                                                                                                           # Wait for the serial port to initialize
+        send_commands(srl)                                                                                                      # Send command to capture image                      
+        serial_read(srl)                                                                                                        # Read the image data from the serial port
+        wait_for_done(srl)                                                                                                      # Wait for DONE message from ESP32
+        srl.close()                                                                                                             # Close the serial port           
     
-    print("Proecessing Image...\n")
-    input_image = cv2.imread(input_image_path)
-    ocr_results = ocr_reader.ocr(input_image_path, cls=True)  # Using PaddleOCR
-    print("Image Processed!")
-    print("=" *40 + "\n")
-
-
-    with open(ocr_output, "w") as text_file:
-        for result in ocr_results:
-            for line in result:
-                bbox, (text, prob) = line
-                if prob > 0.75: # 5% cofidence change later
-                    print(f"Text: {text}\nConfidence: {prob:.3f}\n")
-                    text_file.write(f"{text} ")
-
-    print("=" *40 + "\n")
-    print(f"Detected text saved in {ocr_output}")
-
-
-
-#-----------------------------------------------------------------
-
-
-
-def text_to_speech(file_path):
-
-    with open(file_path, "r") as file:
-        text = file.read().strip()
-        speaker.say("Processing Complete! This is what I found!.")
-        speaker.runAndWait()
-        speaker.stop()
-        speaker.say(text)
-        speaker.runAndWait()
-        speaker.stop()
-
-
- #-----------------------------------------------------------------
-
-
-
-if __name__ == "__main__":
-    
-    with serial.Serial(port, baudrate) as srl:
-        time.sleep(1)
-        send_commands(srl)
-        serial_read(srl)
-        wait_for_done(srl)
-        srl.close()
-    
-    ocr_function(image_output)
-    time.sleep(1)
-    text_to_speech(ocr_output)
-
-
-
-
+    ocr_function(IMAGE_PATH)                                                                                                  # Perform OCR on the captured image      
+    time.sleep(1)                                                                                                               # Wait for a second before processing OCR                                     
+    text_to_speech(OCR_PATH)                                                                                                  # Convert the detected text to speech
