@@ -1,6 +1,6 @@
 # ARTASA
 
-![ARTASA Device Image](path/to/your/image.jpg)
+![ARTASA Device Image](artasa_images/artasa.jpg)
 
 **ARTASA** is a handheld robotic vision system designed to assist individuals who have difficulty reading due to blindness, dyslexia, or other vision impairments.
 
