@@ -2,7 +2,7 @@
 #//////////////////////////
 #|File: artasa_main.py
 #|Author: Jerrin C. Redmon
-#|Version: 1.3.1 
+#|Version: 1.3.2 
 #|Date: April 15, 2025
 #//////////////////////////
 
@@ -116,8 +116,10 @@ def ocr_function(input_image_path):                                             
 
     with open(ocr_output, "w") as text_file:                                                                                   	# Open the output file to save the OCR results
 
-        for result in ocr_results:                                                                                              # Loop through the OCR results            
-            for line in result:          											# Loop through each line in the result                                                                                       
+        for result in ocr_results:                                                                                              # Loop through the OCR results      
+            
+            for line in result:          											                                            # Loop through each line in the result       
+                
                 bbox, (text, prob) = line                                                                                       # Unpack the bounding box and text/probability
 
                 if (prob > 0.75):                                                                                              	# Check if the probability is above the threshold    
