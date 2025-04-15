@@ -118,7 +118,7 @@ def ocr_function(input_image_path):                                             
 
         for result in ocr_results:                                                                                              # Loop through the OCR results      
             
-            for line in result:          											                                            # Loop through each line in the result       
+            for line in result:                                                                                                 # Loop through each line in the result       
                 
                 bbox, (text, prob) = line                                                                                       # Unpack the bounding box and text/probability
 
