@@ -159,7 +159,6 @@ python3 artasa_main.py  # To manually run the OCR and speech pipeline
 - Add multilingual OCR and speech options.
 - Improve serial communication robustness with checksums.
 - Add audio feedback for OCR errors or low confidence.
-- Visual display via small LCD or HDMI.
 
 ---
 
