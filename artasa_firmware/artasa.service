@@ -1,0 +1,19 @@
+[Unit]
+Description=ARTASA Boot Script
+After=network.target sound.target
+Requires=sound.target
+
+[Service]
+WorkingDirectory=/home/artasa/Desktop/artasa_master
+User=artasa
+Group=artasa
+Type=simple
+ExecStart=/usr/bin/env python3 /home/artasa/Desktop/artasa_master/artasa_boot.py
+Restart=always
+RestartSec=10
+
+Environment="PATH=/home/artasa/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/s>
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+
+[Install]
+WantedBy=multi-user.target
