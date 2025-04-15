@@ -60,7 +60,7 @@ Make sure Piper is installed and accessible at:
 ## 🔧 Hardware Requirements
 
 - Raspberry Pi (tested on Raspberry Pi 5)
-- ESP32-CAM or ESP32 with UART camera module
+- Arducam Mega 5MP SPI camera module
 - Push button wired to **GPIO16**
 - Speaker (supports `aplay` for audio output)
 
