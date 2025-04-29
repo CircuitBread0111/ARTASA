@@ -131,8 +131,8 @@ sudo systemctl start artasa.service
 Description=ARTASA Boot Service
 
 [Service]
-WorkingDirectory=/home/artasa/Desktop/Capstone
-ExecStart=/usr/bin/env python3 /home/artasa/Desktop/Capstone/artasa_boot.py
+WorkingDirectory=/home/artasa/Desktop/artasa_master
+ExecStart=/usr/bin/env python3 /home/artasa/Desktop/artasa_master/artasa_boot.py
 Restart=always
 User=artasa
 Group=artasa
